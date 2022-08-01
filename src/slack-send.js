@@ -60,22 +60,27 @@ module.exports = async function slackSend(core) {
 
     if (typeof botToken !== 'undefined' && botToken.length > 0) {
       const message = core.getInput('slack-message') || '';
-      const channelId = core.getInput('channel-id') || '';
+      let channelId = core.getInput('channel-id') || '';
       const web = new WebClient(botToken);
+
 
       if (channelId.length <= 0) {
         console.log('Channel ID is required to run this action. An empty one has been provided');
         throw new Error('Channel ID is required to run this action. An empty one has been provided');
       }
 
+      channelId = channelId.split(',')
+
       if (message.length > 0 || payload) {
         const ts = core.getInput('update-ts');
         if (ts) {
           // update message
-          webResponse = await web.chat.update({ ts, channel: channelId, text: message, ...(payload || {}) });
+          webResponse = await web.chat.update({ ts, channel: channelId[0], text: message, ...(payload || {}) });
         } else {
           // post message
-          webResponse = await web.chat.postMessage({ channel: channelId, text: message, ...(payload || {}) });
+          for (const id of channelId) {
+            webResponse = await web.chat.postMessage({ channel: id, text: message, ...(payload || {}) });
+          }
         }
       } else {
         console.log('Missing slack-message or payload! Did not send a message via chat.postMessage with botToken', { channel: channelId, text: message, ...(payload) });
